@@ -63,6 +63,7 @@ public class OCLBlockVisitor implements ControlFlowGraph.RecursiveVisitor<HIRBlo
     Set<Node> switchClosed;
     HashMap<HIRBlock, Integer> pending;
     Set<HIRBlock> rmvEndBracket;
+    Set<HIRBlock> scopeOpenBlocks;
     private int loopCount;
     private int loopEnds;
 
@@ -77,6 +78,7 @@ public class OCLBlockVisitor implements ControlFlowGraph.RecursiveVisitor<HIRBlo
         closedBlocks = new HashMap<>();
         pending = new HashMap<>();
         rmvEndBracket = new HashSet<>();
+        scopeOpenBlocks = new HashSet<>();
     }
 
     private static boolean isMergeBlock(HIRBlock block) {
@@ -100,6 +102,7 @@ public class OCLBlockVisitor implements ControlFlowGraph.RecursiveVisitor<HIRBlo
         }
         asm.beginScope();
         asm.eolOn();
+        scopeOpenBlocks.add(block);
     }
 
     // Update a list of basic blocks to close. We add a block into the rmvEndBracket
@@ -214,7 +217,7 @@ public class OCLBlockVisitor implements ControlFlowGraph.RecursiveVisitor<HIRBlo
     }
 
     private void closeBlock(HIRBlock block) {
-        if (openBlocks.getOrDefault(block, false) && !wasBlockAlreadyClosed(block)) {
+        if (openBlocks.getOrDefault(block, false) && !wasBlockAlreadyClosed(block) && (!merges.contains(block) || scopeOpenBlocks.contains(block) || block.isLoopEnd())) {
             asm.endScope(block.toString());
             markBlockClosed(block);
         }

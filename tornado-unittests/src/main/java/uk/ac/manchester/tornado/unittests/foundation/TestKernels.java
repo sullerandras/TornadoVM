@@ -233,4 +233,28 @@ public class TestKernels {
             }
         }
     }
+
+    public static void testIf7(
+            FloatArray selfX,
+            IntArray selfAlive,
+            FloatArray scratch,
+            FloatArray config) {
+        int maxSelf = (int) config.get(1);
+        for (@Parallel int i = 0; i < maxSelf; i++) {
+            if (selfAlive.get(i) != 0) {
+                float px = selfX.get(0);
+                int chunkX = (int) (px / 2);
+                for (int cdy = 0; cdy <= 1; cdy++) {
+                    for (int cdx = 0; cdx <= 1; cdx++) {
+                        int ccx = chunkX + cdx;
+                        if (ccx >= 0) {
+                            for (int k = 0; k < 1; k++) {
+                                scratch.set(1, 2);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
 }

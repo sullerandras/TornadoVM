@@ -26,6 +26,7 @@ import uk.ac.manchester.tornado.api.TaskGraph;
 import uk.ac.manchester.tornado.api.TornadoExecutionPlan;
 import uk.ac.manchester.tornado.api.enums.DataTransferMode;
 import uk.ac.manchester.tornado.api.exceptions.TornadoExecutionPlanException;
+import uk.ac.manchester.tornado.api.types.arrays.FloatArray;
 import uk.ac.manchester.tornado.api.types.arrays.IntArray;
 import uk.ac.manchester.tornado.unittests.common.TornadoTestBase;
 
@@ -173,6 +174,26 @@ public class TestIf extends TornadoTestBase {
         for (int i = 0; i < numElements; i++) {
             assertEquals(expectedResult.get(i), a.get(i));
         }
+    }
+
+    @Test
+    public void test07() throws TornadoExecutionPlanException {
+        FloatArray selfX = new FloatArray(100);
+        IntArray selfAlive = new IntArray(100);
+        FloatArray scratch = new FloatArray(100);
+        FloatArray config = new FloatArray(100);
+
+        TaskGraph taskGraph = new TaskGraph("s0") //
+                .task("t0", TestKernels::testIf7, selfX, selfAlive, scratch, config)
+                .transferToHost(DataTransferMode.EVERY_EXECUTION, selfX, selfAlive, scratch, config);
+
+        ImmutableTaskGraph immutableTaskGraph = taskGraph.snapshot();
+        try (TornadoExecutionPlan executionPlan = new TornadoExecutionPlan(immutableTaskGraph)) {
+            executionPlan.execute();
+        }
+
+        // Kernel compiled and executed successfully; verify no corruption
+        assertEquals(0, selfX.get(0), 0.01f);
     }
 
 }
