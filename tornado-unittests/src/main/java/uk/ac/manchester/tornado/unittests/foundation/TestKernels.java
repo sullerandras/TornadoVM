@@ -23,6 +23,7 @@ import uk.ac.manchester.tornado.api.types.arrays.FloatArray;
 import uk.ac.manchester.tornado.api.types.arrays.IntArray;
 import uk.ac.manchester.tornado.api.types.arrays.LongArray;
 import uk.ac.manchester.tornado.api.types.arrays.ShortArray;
+import uk.ac.manchester.tornado.api.types.matrix.Matrix2DFloat;
 
 public class TestKernels {
     public static void copyTest(IntArray a) {
@@ -254,6 +255,20 @@ public class TestKernels {
                         }
                     }
                 }
+            }
+        }
+    }
+
+    public static void testIf8(
+            IntArray plantGrid,
+            Matrix2DFloat rayDists,
+            int selfIndex) {
+        for (int t = 2; t < 50.0f; t += 1) {
+            if (plantGrid.get(1) > 20) {
+                if (t < rayDists.get(selfIndex, 1)) {
+                    plantGrid.set(1, 2);
+                }
+                break;
             }
         }
     }

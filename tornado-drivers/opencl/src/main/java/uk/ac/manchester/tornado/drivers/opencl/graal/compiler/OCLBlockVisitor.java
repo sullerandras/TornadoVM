@@ -384,6 +384,11 @@ public class OCLBlockVisitor implements ControlFlowGraph.RecursiveVisitor<HIRBlo
 
     @Override
     public void exit(HIRBlock block, HIRBlock value) {
+        // Emit any deferred break instruction. When a block contains both a
+        // LoopBreakOp and a ConditionalBranch (IfNode), the break is deferred
+        // until after all child blocks (if-else body) have been visited.
+        openclBuilder.emitDeferredBreak(block);
+
         if (block.isLoopEnd()) {
             LoopEndNode loopEndNode = (LoopEndNode) block.getEndNode();
             LoopBeginNode loopBeginNode = loopEndNode.loopBegin();

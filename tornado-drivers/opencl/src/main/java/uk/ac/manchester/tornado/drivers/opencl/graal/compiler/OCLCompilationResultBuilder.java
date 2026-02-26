@@ -92,6 +92,7 @@ public class OCLCompilationResultBuilder extends CompilationResultBuilder {
     private TaskDataContext metaData;
     private long[] localGrid;
     private OCLDeviceContextInterface deviceContext;
+    private final HashMap<HIRBlock, LIRInstruction> deferredBreaks = new HashMap<>();
 
     public OCLCompilationResultBuilder(CodeGenProviders providers, FrameMap frameMap, Assembler asm, DataBuilder dataBuilder, FrameContext frameContext, OptionValues options, DebugContext debug,
             CompilationResult compilationResult, LIR lir) {
@@ -368,7 +369,29 @@ public class OCLCompilationResultBuilder extends CompilationResultBuilder {
          * Because of the way Graal handles Phi nodes, we generate the break instruction
          * before any phi nodes are updated, therefore we need to ensure that the break
          * is emitted as the end of the block.
+         *
+         * However, if the block also ends with an IfNode (ConditionalBranch), the child
+         * blocks (if-else body) will be visited after emitBlock returns. In that case,
+         * emitting the break here would place it between the if-condition and its body,
+         * producing invalid code. We defer such breaks to be emitted by the block
+         * visitor's exit method, after all child blocks have been processed.
          */
+        if (breakInst != null) {
+            if (block.getEndNode() instanceof IfNode) {
+                deferredBreaks.put(block, breakInst);
+            } else {
+                try {
+                    emitOp(this, breakInst);
+                } catch (TornadoInternalError e) {
+                    throw e.addContext("lir instruction", block + "@" + breakInst.id() + " " + breakInst + "\n");
+                }
+            }
+        }
+
+    }
+
+    void emitDeferredBreak(HIRBlock block) {
+        LIRInstruction breakInst = deferredBreaks.remove(block);
         if (breakInst != null) {
             try {
                 emitOp(this, breakInst);
@@ -376,7 +399,6 @@ public class OCLCompilationResultBuilder extends CompilationResultBuilder {
                 throw e.addContext("lir instruction", block + "@" + breakInst.id() + " " + breakInst + "\n");
             }
         }
-
     }
 
     void printBasicHIRBlockTrace(HIRBlock block) {

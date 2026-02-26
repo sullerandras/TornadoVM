@@ -28,6 +28,7 @@ import uk.ac.manchester.tornado.api.enums.DataTransferMode;
 import uk.ac.manchester.tornado.api.exceptions.TornadoExecutionPlanException;
 import uk.ac.manchester.tornado.api.types.arrays.FloatArray;
 import uk.ac.manchester.tornado.api.types.arrays.IntArray;
+import uk.ac.manchester.tornado.api.types.matrix.Matrix2DFloat;
 import uk.ac.manchester.tornado.unittests.common.TornadoTestBase;
 
 /**
@@ -194,6 +195,25 @@ public class TestIf extends TornadoTestBase {
 
         // Kernel compiled and executed successfully; verify no corruption
         assertEquals(0, selfX.get(0), 0.01f);
+    }
+
+    @Test
+    public void test08() throws TornadoExecutionPlanException {
+        IntArray plantGrid = new IntArray(100);
+        Matrix2DFloat rayDists = new Matrix2DFloat(100, 100);
+        int selfIndex = 1;
+
+        TaskGraph taskGraph = new TaskGraph("s0") //
+                .task("t0", TestKernels::testIf8, plantGrid, rayDists, selfIndex)
+                .transferToHost(DataTransferMode.EVERY_EXECUTION, plantGrid, rayDists);
+
+        ImmutableTaskGraph immutableTaskGraph = taskGraph.snapshot();
+        try (TornadoExecutionPlan executionPlan = new TornadoExecutionPlan(immutableTaskGraph)) {
+            executionPlan.execute();
+        }
+
+        // Kernel compiled and executed successfully; verify no corruption
+        assertEquals(0, plantGrid.get(1));
     }
 
 }
