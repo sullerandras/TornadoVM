@@ -458,7 +458,7 @@ public class OCLBlockVisitor implements ControlFlowGraph.RecursiveVisitor<HIRBlo
             boolean isTrueBranch = ifNode.trueSuccessor() == block.getBeginNode();
             if (!(isTrueBranch && isLoopEnd)) {
                 closeBlock(block);
-                if (block.getLoop() != null) {
+                if (block.getLoop() != null && block.getBeginNode() instanceof LoopExitNode) {
                     incrementClosedLoops(block.getLoop().getHeader());
                 }
             }

@@ -272,4 +272,21 @@ public class TestKernels {
             }
         }
     }
+
+    public static void testIf9(FloatArray arr, IntArray arr2) {
+        for (int i = 0; i < 100; i++) {
+            int chunkX = (int) arr.get(0);
+            int chunkY = (int) arr.get(0);
+            int chunkRange = 2;
+
+            for (int cdx = -chunkRange; cdx <= chunkRange; cdx++) {
+                int cx = chunkX;
+                int cy = chunkY;
+                if (cx < 0 || cx >= 64 || cy < 0 || cy >= 64) continue;
+                for (int k = 0; k < cx; k++) {
+                    arr2.set(2, 3);
+                }
+            }
+        }
+    }
 }

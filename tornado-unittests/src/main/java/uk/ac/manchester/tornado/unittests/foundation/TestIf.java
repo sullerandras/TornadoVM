@@ -216,4 +216,23 @@ public class TestIf extends TornadoTestBase {
         assertEquals(0, plantGrid.get(1));
     }
 
+    @Test
+    public void test09() throws TornadoExecutionPlanException {
+        FloatArray arr = new FloatArray(100);
+        IntArray arr2 = new IntArray(100);
+        arr.set(0, 1);
+
+        TaskGraph taskGraph = new TaskGraph("s0") //
+                .task("t0", TestKernels::testIf9, arr, arr2)
+                .transferToHost(DataTransferMode.EVERY_EXECUTION, arr2);
+
+        ImmutableTaskGraph immutableTaskGraph = taskGraph.snapshot();
+        try (TornadoExecutionPlan executionPlan = new TornadoExecutionPlan(immutableTaskGraph)) {
+            executionPlan.execute();
+        }
+
+        // Kernel compiled and executed successfully; verify no corruption
+        assertEquals(3, arr2.get(2));
+    }
+
 }
