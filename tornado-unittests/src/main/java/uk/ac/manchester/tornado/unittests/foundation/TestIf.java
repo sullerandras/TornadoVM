@@ -26,7 +26,9 @@ import uk.ac.manchester.tornado.api.TaskGraph;
 import uk.ac.manchester.tornado.api.TornadoExecutionPlan;
 import uk.ac.manchester.tornado.api.enums.DataTransferMode;
 import uk.ac.manchester.tornado.api.exceptions.TornadoExecutionPlanException;
+import uk.ac.manchester.tornado.api.types.arrays.FloatArray;
 import uk.ac.manchester.tornado.api.types.arrays.IntArray;
+import uk.ac.manchester.tornado.api.types.matrix.Matrix2DFloat;
 import uk.ac.manchester.tornado.unittests.common.TornadoTestBase;
 
 /**
@@ -173,6 +175,64 @@ public class TestIf extends TornadoTestBase {
         for (int i = 0; i < numElements; i++) {
             assertEquals(expectedResult.get(i), a.get(i));
         }
+    }
+
+    @Test
+    public void test07() throws TornadoExecutionPlanException {
+        FloatArray selfX = new FloatArray(100);
+        IntArray selfAlive = new IntArray(100);
+        FloatArray scratch = new FloatArray(100);
+        FloatArray config = new FloatArray(100);
+
+        TaskGraph taskGraph = new TaskGraph("s0") //
+                .task("t0", TestKernels::testIf7, selfX, selfAlive, scratch, config)
+                .transferToHost(DataTransferMode.EVERY_EXECUTION, selfX, selfAlive, scratch, config);
+
+        ImmutableTaskGraph immutableTaskGraph = taskGraph.snapshot();
+        try (TornadoExecutionPlan executionPlan = new TornadoExecutionPlan(immutableTaskGraph)) {
+            executionPlan.execute();
+        }
+
+        // Kernel compiled and executed successfully; verify no corruption
+        assertEquals(0, selfX.get(0), 0.01f);
+    }
+
+    @Test
+    public void test08() throws TornadoExecutionPlanException {
+        IntArray plantGrid = new IntArray(100);
+        Matrix2DFloat rayDists = new Matrix2DFloat(100, 100);
+        int selfIndex = 1;
+
+        TaskGraph taskGraph = new TaskGraph("s0") //
+                .task("t0", TestKernels::testIf8, plantGrid, rayDists, selfIndex)
+                .transferToHost(DataTransferMode.EVERY_EXECUTION, plantGrid, rayDists);
+
+        ImmutableTaskGraph immutableTaskGraph = taskGraph.snapshot();
+        try (TornadoExecutionPlan executionPlan = new TornadoExecutionPlan(immutableTaskGraph)) {
+            executionPlan.execute();
+        }
+
+        // Kernel compiled and executed successfully; verify no corruption
+        assertEquals(0, plantGrid.get(1));
+    }
+
+    @Test
+    public void test09() throws TornadoExecutionPlanException {
+        FloatArray arr = new FloatArray(100);
+        IntArray arr2 = new IntArray(100);
+        arr.set(0, 1);
+
+        TaskGraph taskGraph = new TaskGraph("s0") //
+                .task("t0", TestKernels::testIf9, arr, arr2)
+                .transferToHost(DataTransferMode.EVERY_EXECUTION, arr2);
+
+        ImmutableTaskGraph immutableTaskGraph = taskGraph.snapshot();
+        try (TornadoExecutionPlan executionPlan = new TornadoExecutionPlan(immutableTaskGraph)) {
+            executionPlan.execute();
+        }
+
+        // Kernel compiled and executed successfully; verify no corruption
+        assertEquals(3, arr2.get(2));
     }
 
 }

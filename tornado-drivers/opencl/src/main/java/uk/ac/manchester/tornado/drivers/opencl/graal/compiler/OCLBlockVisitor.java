@@ -63,6 +63,7 @@ public class OCLBlockVisitor implements ControlFlowGraph.RecursiveVisitor<HIRBlo
     Set<Node> switchClosed;
     HashMap<HIRBlock, Integer> pending;
     Set<HIRBlock> rmvEndBracket;
+    Set<HIRBlock> scopeOpenBlocks;
     private int loopCount;
     private int loopEnds;
 
@@ -77,6 +78,7 @@ public class OCLBlockVisitor implements ControlFlowGraph.RecursiveVisitor<HIRBlo
         closedBlocks = new HashMap<>();
         pending = new HashMap<>();
         rmvEndBracket = new HashSet<>();
+        scopeOpenBlocks = new HashSet<>();
     }
 
     private static boolean isMergeBlock(HIRBlock block) {
@@ -100,6 +102,7 @@ public class OCLBlockVisitor implements ControlFlowGraph.RecursiveVisitor<HIRBlo
         }
         asm.beginScope();
         asm.eolOn();
+        scopeOpenBlocks.add(block);
     }
 
     // Update a list of basic blocks to close. We add a block into the rmvEndBracket
@@ -214,7 +217,7 @@ public class OCLBlockVisitor implements ControlFlowGraph.RecursiveVisitor<HIRBlo
     }
 
     private void closeBlock(HIRBlock block) {
-        if (openBlocks.getOrDefault(block, false) && !wasBlockAlreadyClosed(block)) {
+        if (openBlocks.getOrDefault(block, false) && !wasBlockAlreadyClosed(block) && (!merges.contains(block) || scopeOpenBlocks.contains(block) || block.isLoopEnd())) {
             asm.endScope(block.toString());
             markBlockClosed(block);
         }
@@ -381,6 +384,11 @@ public class OCLBlockVisitor implements ControlFlowGraph.RecursiveVisitor<HIRBlo
 
     @Override
     public void exit(HIRBlock block, HIRBlock value) {
+        // Emit any deferred break instruction. When a block contains both a
+        // LoopBreakOp and a ConditionalBranch (IfNode), the break is deferred
+        // until after all child blocks (if-else body) have been visited.
+        openclBuilder.emitDeferredBreak(block);
+
         if (block.isLoopEnd()) {
             LoopEndNode loopEndNode = (LoopEndNode) block.getEndNode();
             LoopBeginNode loopBeginNode = loopEndNode.loopBegin();
@@ -450,7 +458,7 @@ public class OCLBlockVisitor implements ControlFlowGraph.RecursiveVisitor<HIRBlo
             boolean isTrueBranch = ifNode.trueSuccessor() == block.getBeginNode();
             if (!(isTrueBranch && isLoopEnd)) {
                 closeBlock(block);
-                if (block.getLoop() != null) {
+                if (block.getLoop() != null && block.getBeginNode() instanceof LoopExitNode) {
                     incrementClosedLoops(block.getLoop().getHeader());
                 }
             }

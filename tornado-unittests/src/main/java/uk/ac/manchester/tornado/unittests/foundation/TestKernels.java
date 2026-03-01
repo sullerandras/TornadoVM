@@ -23,6 +23,7 @@ import uk.ac.manchester.tornado.api.types.arrays.FloatArray;
 import uk.ac.manchester.tornado.api.types.arrays.IntArray;
 import uk.ac.manchester.tornado.api.types.arrays.LongArray;
 import uk.ac.manchester.tornado.api.types.arrays.ShortArray;
+import uk.ac.manchester.tornado.api.types.matrix.Matrix2DFloat;
 
 public class TestKernels {
     public static void copyTest(IntArray a) {
@@ -230,6 +231,61 @@ public class TestKernels {
                 a.set(i, 100);
             } else {
                 a.set(i, 200);
+            }
+        }
+    }
+
+    public static void testIf7(
+            FloatArray selfX,
+            IntArray selfAlive,
+            FloatArray scratch,
+            FloatArray config) {
+        int maxSelf = (int) config.get(1);
+        for (@Parallel int i = 0; i < maxSelf; i++) {
+            if (selfAlive.get(i) != 0) {
+                float px = selfX.get(0);
+                int chunkX = (int) (px / 2);
+                for (int cdy = 0; cdy <= 1; cdy++) {
+                    for (int cdx = 0; cdx <= 1; cdx++) {
+                        int ccx = chunkX + cdx;
+                        if (ccx >= 0) {
+                            for (int k = 0; k < 1; k++) {
+                                scratch.set(1, 2);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    public static void testIf8(
+            IntArray plantGrid,
+            Matrix2DFloat rayDists,
+            int selfIndex) {
+        for (int t = 2; t < 50.0f; t += 1) {
+            if (plantGrid.get(1) > 20) {
+                if (t < rayDists.get(selfIndex, 1)) {
+                    plantGrid.set(1, 2);
+                }
+                break;
+            }
+        }
+    }
+
+    public static void testIf9(FloatArray arr, IntArray arr2) {
+        for (int i = 0; i < 100; i++) {
+            int chunkX = (int) arr.get(0);
+            int chunkY = (int) arr.get(0);
+            int chunkRange = 2;
+
+            for (int cdx = -chunkRange; cdx <= chunkRange; cdx++) {
+                int cx = chunkX;
+                int cy = chunkY;
+                if (cx < 0 || cx >= 64 || cy < 0 || cy >= 64) continue;
+                for (int k = 0; k < cx; k++) {
+                    arr2.set(2, 3);
+                }
             }
         }
     }
